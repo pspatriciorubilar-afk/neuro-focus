@@ -36,13 +36,20 @@ export const NeuroEngine = {
   },
 
   /**
-   * D-SA (Dynamic Scaling Algorithm) basado en nivel ELITE (65% éxito).
+   * D-SA 2.0 (Dynamic Scaling Algorithm) - Asymmetric Staircase for 35% Error Equilibrium.
+   * Para converger a 35% error (P(err)=0.35, P(succ)=0.65): 
+   * Aumentar SSD tras éxito (frenado exitoso) -> más difícil.
+   * Disminuir SSD tras fallo (respuesta impulsiva) -> más fácil.
+   * P_error * StepDown = P_succ * StepUp -> 0.35 * 65ms = 0.65 * 35ms.
    */
-  calculateNextSSD(currentSSD: number, successRate: number, stepMs: number = 50): number {
-    if (successRate > 0.65) {
-      return currentSSD + stepMs;
+  calculateNextSSD(currentSSD: number, lastTrialSuccess: boolean): number {
+    const stepUp = 35;   // Si frenó con éxito: Aumentar SSD en 35ms
+    const stepDown = 65; // Si falló al frenar: Bajar SSD en 65ms
+    
+    if (lastTrialSuccess) {
+      return currentSSD + stepUp;
     } else {
-      return Math.max(50, currentSSD - stepMs);
+      return Math.max(50, currentSSD - stepDown);
     }
   },
 

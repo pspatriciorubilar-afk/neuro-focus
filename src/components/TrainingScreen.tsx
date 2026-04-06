@@ -57,6 +57,7 @@ export const TrainingScreen: React.FC = () => {
     const stimulusStartTimeRef = useRef<number>(0);
     const trialTimeoutRef = useRef<any>(null);
     const ssdHistoryRef = useRef<number[]>([]);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     // Initial Load: Records
     useEffect(() => {
@@ -169,7 +170,7 @@ export const TrainingScreen: React.FC = () => {
         const pError = nFail / nStop;
 
         const successRate = 1 - pError;
-        const nextSSD = NeuroEngine.calculateNextSSD(ssdRef.current, successRate);
+        const nextSSD = NeuroEngine.calculateNextSSD(ssdRef.current, success);
         ssdRef.current = nextSSD;
 
         // SSRT robusto usando el promedio de SSDs de la sesión
@@ -257,7 +258,73 @@ export const TrainingScreen: React.FC = () => {
         return { label: 'LOW FOCUS', color: '#404040' };
     };
 
+    const exportCSV = () => {
+        if (history.length === 0) return;
+        const headers = "Fecha,SSRT(ms),Precision(%),RTSD(ms),Categoria\n";
+        const rows = history.map(r => {
+            const date = new Date(r.date).toISOString().split('T')[0];
+            return `${date},${r.ssrt.toFixed(0)},${(r.accuracy*100).toFixed(0)},${Math.round(r.rtsd)},${r.rank}`;
+        }).join('\n');
+        
+        const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `neuro_focus_history_elite.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const rank = getRank();
+
+    // Canvas Graphics Engine (Zero DOM Lag)
+    useEffect(() => {
+        if (!canvasRef.current || (state !== 'GO' && state !== 'STOP' && state !== 'COUNTDOWN')) return;
+        const ctx = canvasRef.current.getContext('2d');
+        if (!ctx) return;
+
+        let animationFrameId: number;
+
+        const render = () => {
+            ctx.clearRect(0, 0, 260, 260);
+
+            if (state === 'GO' || state === 'STOP') {
+                ctx.beginPath();
+                ctx.arc(130, 130, 130, 0, 2 * Math.PI);
+                ctx.fillStyle = state === 'GO' ? '#8eff71' : '#ff4d4d';
+                ctx.fill();
+
+                // Simulamos resplandor inmersivo a nivel de GPU
+                ctx.save();
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = state === 'GO' ? 'rgba(142, 255, 113, 0.6)' : 'rgba(255, 77, 77, 0.6)';
+                ctx.fill();
+                ctx.restore();
+
+                if (state === 'STOP') {
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 120px "Space Grotesk", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('X', 130, 138); // Ligero offset visual por fuente
+                }
+            } else if (state === 'COUNTDOWN') {
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 120px "Space Grotesk", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(countdown.toString(), 130, 138);
+            }
+        };
+
+        animationFrameId = requestAnimationFrame(render);
+
+        return () => {
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, [state, countdown]);
 
     return (
         <div className="app-container" onClick={handleAction}>
@@ -265,15 +332,10 @@ export const TrainingScreen: React.FC = () => {
             {state === 'INTRO_1' && (
                 <div className="onboarding-overlay">
                     <div className="onboarding-content" style={{justifyContent: 'center', textAlign: 'center'}}>
-                        <span className="onboarding-tag">ENTRENAMIENTO COGNITIVO</span>
-                        <h1 className="onboarding-title" style={{fontSize: '32px', color: 'var(--kinetic-neon)'}}>El neuro-freno de élite</h1>
-                        
-                        <div className="bracket-box" style={{margin: '20px 0', background: 'rgba(142, 255, 113, 0.02)'}}>
-                            <p className="onboarding-text" style={{fontSize: '18px', margin: '0', color: '#fff'}}>
-                                **Hoy iniciarás** el desarrollo de tu capacidad de frenado motor, esencial para anticipar y reaccionar ante estímulos críticos en competencia.
-                            </p>
-                        </div>
+                        <span className="onboarding-tag">SISTEMA NEURO-COGNITIVO</span>
+                        <h1 className="onboarding-title" style={{fontSize: '32px', color: 'var(--kinetic-neon)', marginTop: '20px'}}>Entrenamiento de precisión para el sistema nervioso</h1>
                     </div>
+
                     {/* Bottom Nav Module */}
                     <div className="bottom-nav">
                         <button className="nav-btn module-btn" onClick={(e) => { e.stopPropagation(); setState('INTRO_2'); }}>ENTRENAR</button>
@@ -317,11 +379,15 @@ export const TrainingScreen: React.FC = () => {
             {/* Dashboard: Historial */}
             {state === 'DASHBOARD' && (
                 <div className="dashboard-container">
-                    <div className="dashboard-header">
-                        <div>
-                            <h1 className="dash-title">Dashboard del atleta</h1>
+                    <div className="dashboard-header" style={{flexDirection: 'column', alignItems: 'flex-start', gap: '24px'}}>
+                        <button className="nav-btn secondary" style={{padding: '8px 16px', fontSize: '10px'}} onClick={(e) => { e.stopPropagation(); setState('INTRO_1'); }}>← VOLVER</button>
+                        <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center'}}>
+                            <h1 className="dash-title">Dashboard</h1>
+                            <div style={{display: 'flex', gap: '12px'}}>
+                                <button className="nav-btn secondary" style={{padding: '12px 16px', fontSize: '11px'}} onClick={(e) => { e.stopPropagation(); exportCSV(); }}>CSV ⬇</button>
+                                <button className="nav-btn" style={{padding: '12px 16px', fontSize: '11px'}} onClick={(e) => { e.stopPropagation(); startTraining(); }}>SESIÓN</button>
+                            </div>
                         </div>
-                        <button className="nav-btn" onClick={(e) => { e.stopPropagation(); startTraining(); }}>NUEVA SESIÓN</button>
                     </div>
 
                     <div className="history-list">
@@ -405,12 +471,7 @@ export const TrainingScreen: React.FC = () => {
                     </div>
 
                     <div className={`stimulus-main`}>
-                        {state === 'COUNTDOWN' && <div className="onboarding-title" style={{fontSize: '120px'}}>{countdown}</div>}
-                        {(state === 'GO' || state === 'STOP') && (
-                            <div className={`stim-circle ${state}`}>
-                                {state === 'STOP' && <span className="stim-icon">X</span>}
-                            </div>
-                        )}
+                        <canvas ref={canvasRef} width={260} height={260} style={{display: 'block'}}></canvas>
                     </div>
 
                     {metrics.fatigueDetected && (
