@@ -261,21 +261,29 @@ export const TrainingScreen: React.FC = () => {
 
     const exportCSV = () => {
         if (history.length === 0) return;
-        const headers = "Fecha,SSRT(ms),Precision(%),RTSD(ms),Categoria\n";
-        const rows = history.map(r => {
-            const date = new Date(r.date).toISOString().split('T')[0];
-            return `${date},${r.ssrt.toFixed(0)},${(r.accuracy*100).toFixed(0)},${Math.round(r.rtsd)},${r.rank}`;
-        }).join('\n');
-        
-        const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `neuro_focus_history_elite.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            const headers = "Fecha,SSRT(ms),Precision(%),RTSD(ms),Categoria\n";
+            const rows = history.map(r => {
+                const date = new Date(r.date).toISOString().split('T')[0];
+                return `${date},${r.ssrt.toFixed(0)},${(r.accuracy*100).toFixed(0)},${Math.round(r.rtsd)},${r.rank}`;
+            }).join('\n');
+            
+            const csvContent = headers + rows;
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `neuro_focus_history_${Date.now()}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+        } catch (err) {
+            console.error("Error al exportar CSV:", err);
+            alert("No se pudo generar el archivo CSV.");
+        }
     };
 
     const rank = getRank();
@@ -286,11 +294,14 @@ export const TrainingScreen: React.FC = () => {
         const ctx = canvasRef.current.getContext('2d');
         if (!ctx) return;
 
-        // Fix Display Quality (Retina/High-DPI)
+        // Display Quality Adjustment (Retina/High-DPI)
         const dpr = window.devicePixelRatio || 1;
-        const logicalSize = 260;
+        const logicalSize = 320; // 320px para asegurar espacio al halo/resplandor
         canvasRef.current.width = logicalSize * dpr;
         canvasRef.current.height = logicalSize * dpr;
+        canvasRef.current.style.width = `${logicalSize}px`;
+        canvasRef.current.style.height = `${logicalSize}px`;
+        
         ctx.resetTransform();
         ctx.scale(dpr, dpr);
 
@@ -299,32 +310,37 @@ export const TrainingScreen: React.FC = () => {
         const render = () => {
             ctx.clearRect(0, 0, logicalSize, logicalSize);
 
+            // Centro del dibujo
+            const centerX = logicalSize / 2;
+            const centerY = logicalSize / 2;
+            const radius = 110; // 220px de diámetro real
+
             if (state === 'GO' || state === 'STOP') {
                 ctx.beginPath();
-                ctx.arc(130, 130, 130, 0, 2 * Math.PI);
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
                 ctx.fillStyle = state === 'GO' ? '#8eff71' : '#ff4d4d';
                 ctx.fill();
 
                 // Simulamos resplandor inmersivo a nivel de GPU
                 ctx.save();
-                ctx.shadowBlur = 30 * dpr; // Scale blur
-                ctx.shadowColor = state === 'GO' ? 'rgba(142, 255, 113, 0.6)' : 'rgba(255, 77, 77, 0.6)';
+                ctx.shadowBlur = 40 * dpr; // Halo más suave y Premium
+                ctx.shadowColor = state === 'GO' ? 'rgba(142, 255, 113, 0.7)' : 'rgba(255, 77, 77, 0.7)';
                 ctx.fill();
                 ctx.restore();
 
                 if (state === 'STOP') {
                     ctx.fillStyle = '#000';
-                    ctx.font = 'bold 120px "Space Grotesk", sans-serif';
+                    ctx.font = 'bold 100px "Space Grotesk", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText('X', 130, 138); // Ligero offset visual por fuente
+                    ctx.fillText('X', centerX, centerY + 5); 
                 }
             } else if (state === 'COUNTDOWN') {
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 120px "Space Grotesk", sans-serif';
+                ctx.font = 'bold 100px "Space Grotesk", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(countdown.toString(), 130, 138);
+                ctx.fillText(countdown.toString(), centerX, centerY + 5);
             }
         };
 
@@ -422,36 +438,36 @@ export const TrainingScreen: React.FC = () => {
                                 )}
                                 
                                 {expandedSession === record.id && (
-                                    <div style={{width: '100%', marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px'}}>
+                                    <div style={{width: '100%', marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px'}}>
                                         <div style={{display: 'flex', gap: '16px', margin: '12px 0', justifyContent: 'space-between'}}>
                                             <div className="history-ssrt-neon" style={{position: 'relative'}}>
-                                                <div className="hud-label" style={{marginBottom: '4px'}}>
+                                                <div className="hud-label" style={{marginBottom: '4px', fontSize: '10px', color: '#fff'}}>
                                                     SSRT 
-                                                    <span className="info-icon" style={{width: '10px', height: '10px', fontSize: '7px', marginLeft: '4px'}} 
+                                                    <span className="info-icon" style={{width: '12px', height: '12px', fontSize: '8px', marginLeft: '6px', borderColor: '#fff'}} 
                                                         onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'SSRT'}); }}>i</span>
                                                 </div>
-                                                <div className="val" style={{fontSize: '20px'}}>{(record.ssrt ?? 0).toFixed(0)}<span className="unit">ms</span></div>
+                                                <div className="val" style={{fontSize: '24px', color: 'var(--kinetic-neon)', fontWeight: 'bold'}}>{(record.ssrt ?? 0).toFixed(0)}<span className="unit" style={{fontSize: '12px', color: '#ababab'}}>ms</span></div>
                                             </div>
 
                                             <div className="history-ssrt-neon" style={{position: 'relative'}}>
-                                                <div className="hud-label" style={{marginBottom: '4px'}}>
+                                                <div className="hud-label" style={{marginBottom: '4px', fontSize: '10px', color: '#fff'}}>
                                                     RTSD 
-                                                    <span className="info-icon" style={{width: '10px', height: '10px', fontSize: '7px', marginLeft: '4px'}}
+                                                    <span className="info-icon" style={{width: '12px', height: '12px', fontSize: '8px', marginLeft: '6px', borderColor: '#fff'}}
                                                         onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'RTSD'}); }}>i</span>
                                                 </div>
-                                                <div className="val" style={{fontSize: '20px'}}>{(record.rtsd ?? 0).toFixed(0)}<span className="unit">ms</span></div>
+                                                <div className="val" style={{fontSize: '24px', color: 'var(--kinetic-neon)', fontWeight: 'bold'}}>{(record.rtsd ?? 0).toFixed(0)}<span className="unit" style={{fontSize: '12px', color: '#ababab'}}>ms</span></div>
                                             </div>
 
                                             <div className="history-ssrt-neon" style={{position: 'relative'}}>
-                                                <div className="hud-label" style={{marginBottom: '4px'}}>
+                                                <div className="hud-label" style={{marginBottom: '4px', fontSize: '10px', color: '#fff'}}>
                                                     ACC 
-                                                    <span className="info-icon" style={{width: '11px', height: '11px', fontSize: '7px', marginLeft: '4px'}}
+                                                    <span className="info-icon" style={{width: '12px', height: '12px', fontSize: '8px', marginLeft: '6px', borderColor: '#fff'}}
                                                         onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'ACC'}); }}>i</span>
                                                 </div>
-                                                <div className="val" style={{fontSize: '20px'}}>{((record.accuracy ?? 0)*100).toFixed(0)}<span className="unit">%</span></div>
+                                                <div className="val" style={{fontSize: '24px', color: 'var(--kinetic-neon)', fontWeight: 'bold'}}>{((record.accuracy ?? 0)*100).toFixed(0)}<span className="unit" style={{fontSize: '12px', color: '#ababab'}}>%</span></div>
                                             </div>
                                         </div>
-                                        <div style={{fontSize: '13px', color: '#ababab', fontStyle: 'italic', borderTop: '1px solid #1f1f1f', paddingTop: '12px', width: '100%', lineHeight: '1.4'}}>
+                                        <div style={{fontSize: '14px', color: '#dedede', fontStyle: 'italic', borderTop: '1px solid #333', paddingTop: '12px', width: '100%', lineHeight: '1.5', marginTop: '8px'}}>
                                             {record.feedback || "Sin feedback disponible."}
                                         </div>
                                     </div>
@@ -490,7 +506,7 @@ export const TrainingScreen: React.FC = () => {
                     </div>
 
                     <div className={`stimulus-main`}>
-                        <canvas ref={canvasRef} width={260} height={260} style={{display: 'block'}}></canvas>
+                        <canvas ref={canvasRef} style={{display: 'block', margin: 'auto'}}></canvas>
                     </div>
 
                     {metrics.fatigueDetected && (
