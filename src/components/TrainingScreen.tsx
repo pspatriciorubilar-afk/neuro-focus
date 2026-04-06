@@ -43,9 +43,7 @@ export const TrainingScreen: React.FC = () => {
     const [currentTrial, setCurrentTrial] = useState(0);
     const [countdown, setCountdown] = useState(3);
     const [history, setHistory] = useState<SessionRecord[]>([]);
-    const [showSSRTInfo, setShowSSRTInfo] = useState(false);
-    const [showACCInfo, setShowACCInfo] = useState(false);
-    const [showRTSDInfo, setShowRTSDInfo] = useState(false);
+    const [activeInfoPanel, setActiveInfoPanel] = useState<keyof typeof METRIC_INFO | null>(null);
     const [activeDashboardInfo, setActiveDashboardInfo] = useState<{id: string, type: keyof typeof METRIC_INFO} | null>(null);
 
     // Constants
@@ -275,10 +273,11 @@ export const TrainingScreen: React.FC = () => {
                                 **Hoy iniciarás** el desarrollo de tu capacidad de frenado motor, esencial para anticipar y reaccionar ante estímulos críticos en competencia.
                             </p>
                         </div>
-
-                        <div className="onboarding-footer" style={{marginTop: '30px', border: 'none'}}>
-                            <button className="nav-btn" style={{width: '100%', borderRadius: '4px'}} onClick={(e) => { e.stopPropagation(); setState('INTRO_2'); }}>COMENZAR ENTRENAMIENTO</button>
-                        </div>
+                    </div>
+                    {/* Bottom Nav Module */}
+                    <div className="bottom-nav">
+                        <button className="nav-btn module-btn" onClick={(e) => { e.stopPropagation(); setState('INTRO_2'); }}>ENTRENAR</button>
+                        <button className="nav-btn module-btn secondary" onClick={(e) => { e.stopPropagation(); setState('DASHBOARD'); }}>DASHBOARD</button>
                     </div>
                     <div className="developer-footer">Desarrollado por Psicólogo Patricio Rubilar M.</div>
                 </div>
@@ -346,12 +345,7 @@ export const TrainingScreen: React.FC = () => {
                                         </div>
                                         <div className="val">{(record.ssrt ?? 0).toFixed(0)}<span className="unit">ms</span></div>
                                         
-                                        {activeDashboardInfo?.id === record.id && activeDashboardInfo?.type === 'SSRT' && (
-                                            <div className="info-overlay-box" style={{left: '0', transform: 'none', width: '240px'}} onClick={(e) => e.stopPropagation()}>
-                                                <p><strong>{METRIC_INFO.SSRT.title}:</strong> {METRIC_INFO.SSRT.desc}</p>
-                                                <button className="nav-btn" style={{padding: '4px 8px', marginTop: '8px', fontSize: '9px'}} onClick={() => setActiveDashboardInfo(null)}>CERRAR</button>
-                                            </div>
-                                        )}
+                                        {/* Remove inline overlay logic */}
                                     </div>
 
                                     <div className="history-ssrt-neon" style={{position: 'relative'}}>
@@ -361,13 +355,7 @@ export const TrainingScreen: React.FC = () => {
                                                 onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'RTSD'}); }}>i</span>
                                         </div>
                                         <div className="val">{(record.rtsd ?? 0).toFixed(0)}<span className="unit">ms</span></div>
-
-                                        {activeDashboardInfo?.id === record.id && activeDashboardInfo?.type === 'RTSD' && (
-                                            <div className="info-overlay-box" style={{left: '0', transform: 'none', width: '240px'}} onClick={(e) => e.stopPropagation()}>
-                                                <p><strong>{METRIC_INFO.RTSD.title}:</strong> {METRIC_INFO.RTSD.desc}</p>
-                                                <button className="nav-btn" style={{padding: '4px 8px', marginTop: '8px', fontSize: '9px'}} onClick={() => setActiveDashboardInfo(null)}>CERRAR</button>
-                                            </div>
-                                        )}
+                                        {/* Remove inline overlay logic */}
                                     </div>
 
                                     <div className="history-ssrt-neon" style={{position: 'relative'}}>
@@ -377,13 +365,7 @@ export const TrainingScreen: React.FC = () => {
                                                 onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'ACC'}); }}>i</span>
                                         </div>
                                         <div className="val">{((record.accuracy ?? 0)*100).toFixed(0)}<span className="unit">%</span></div>
-
-                                        {activeDashboardInfo?.id === record.id && activeDashboardInfo?.type === 'ACC' && (
-                                            <div className="info-overlay-box" style={{left: 'auto', right: '0', transform: 'none', width: '240px'}} onClick={(e) => e.stopPropagation()}>
-                                                <p><strong>{METRIC_INFO.ACC.title}:</strong> {METRIC_INFO.ACC.desc}</p>
-                                                <button className="nav-btn" style={{padding: '4px 8px', marginTop: '8px', fontSize: '9px'}} onClick={() => setActiveDashboardInfo(null)}>CERRAR</button>
-                                            </div>
-                                        )}
+                                        {/* Remove inline overlay logic */}
                                     </div>
                                 </div>
                                 <div style={{fontSize: '13px', color: '#ababab', fontStyle: 'italic', borderTop: '1px solid #1f1f1f', paddingTop: '12px', width: '100%', lineHeight: '1.4'}}>
@@ -392,6 +374,17 @@ export const TrainingScreen: React.FC = () => {
                             </div>
                         ))}
                     </div>
+
+                    {/* Fixed Modal Info Panel for Dashboard */}
+                    {activeDashboardInfo && (
+                        <div className="fixed-info-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="fixed-info-content bracket-box">
+                                <h3 style={{color: 'var(--kinetic-neon)', marginBottom: '10px', fontSize: '14px', textTransform: 'uppercase'}}>{METRIC_INFO[activeDashboardInfo.type].title}</h3>
+                                <p style={{fontSize: '14px', lineHeight: '1.6', color: '#dedede'}}>{METRIC_INFO[activeDashboardInfo.type].desc}</p>
+                                <button className="nav-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => setActiveDashboardInfo(null)}>ENTENDIDO</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -431,53 +424,53 @@ export const TrainingScreen: React.FC = () => {
                 <div className="full-modal">
                     <span className="onboarding-tag">Protocolo completado</span>
                     <h1 className="onboarding-title">Sesión finalizada</h1>
-                    <div className="bracket-box" style={{padding: '60px', margin: '40px 0', textAlign: 'center', position: 'relative'}}>
-                        <div className="onboarding-tag" style={{color: rank.color, fontSize: '32px'}}>{rank.label}</div>
-                        <div className="onboarding-grid" style={{marginTop: '40px', gridTemplateColumns: '1fr 1fr 1fr', width: '400px'}}>
+                    <div className="bracket-box" style={{padding: '30px', margin: '20px 0', textAlign: 'center', position: 'relative', width: '100%', maxWidth: '500px'}}>
+                        <div className="onboarding-tag" style={{color: rank.color, fontSize: '24px'}}>{rank.label}</div>
+                        
+                        <div className="onboarding-grid" style={{marginTop: '30px', gridTemplateColumns: '1fr 1fr 1fr'}}>
                             <div style={{position: 'relative'}}>
                                 <div className="hud-label" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
-                                    SSRT FINAL
-                                    <span className="info-icon" onClick={(e) => { e.stopPropagation(); setShowSSRTInfo(!showSSRTInfo); }}>i</span>
+                                    SSRT
+                                    <span className="info-icon" onClick={(e) => { e.stopPropagation(); setActiveInfoPanel('SSRT'); }}>i</span>
                                 </div>
-                                <div className="hud-value">{(metrics.ssrt ?? 0).toFixed(0)}ms</div>
-                                
-                                {showSSRTInfo && (
-                                    <div className="info-overlay-box" onClick={(e) => e.stopPropagation()}>
-                                        <p><strong>{METRIC_INFO.SSRT.title}:</strong> {METRIC_INFO.SSRT.desc}</p>
-                                        <button className="nav-btn" style={{padding: '8px 16px', marginTop: '12px', fontSize: '10px'}} onClick={() => setShowSSRTInfo(false)}>CERRAR</button>
-                                    </div>
-                                )}
+                                <div className="hud-value">{(metrics.ssrt ?? 0).toFixed(0)}<span style={{fontSize: '12px'}}>ms</span></div>
                             </div>
                             <div style={{position: 'relative'}}>
                                 <div className="hud-label" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
                                     PRECISIÓN
-                                    <span className="info-icon" onClick={(e) => { e.stopPropagation(); setShowACCInfo(!showACCInfo); }}>i</span>
+                                    <span className="info-icon" onClick={(e) => { e.stopPropagation(); setActiveInfoPanel('ACC'); }}>i</span>
                                 </div>
-                                <div className="hud-value">{((metrics.accuracy ?? 0)*100).toFixed(0)}%</div>
-                                
-                                {showACCInfo && (
-                                    <div className="info-overlay-box" onClick={(e) => e.stopPropagation()}>
-                                        <p><strong>{METRIC_INFO.ACC.title}:</strong> {METRIC_INFO.ACC.desc}</p>
-                                        <button className="nav-btn" style={{padding: '8px 16px', marginTop: '12px', fontSize: '10px'}} onClick={() => setShowACCInfo(false)}>CERRAR</button>
-                                    </div>
-                                )}
+                                <div className="hud-value">{((metrics.accuracy ?? 0)*100).toFixed(0)}<span style={{fontSize: '12px'}}>%</span></div>
                             </div>
                             <div style={{position: 'relative'}}>
                                 <div className="hud-label" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
-                                    SST-RTSD
-                                    <span className="info-icon" onClick={(e) => { e.stopPropagation(); setShowRTSDInfo(!showRTSDInfo); }}>i</span>
+                                    RTSD
+                                    <span className="info-icon" onClick={(e) => { e.stopPropagation(); setActiveInfoPanel('RTSD'); }}>i</span>
                                 </div>
-                                <div className="hud-value">{(metrics.rtsd ?? 0).toFixed(0)}ms</div>
-                                
-                                {showRTSDInfo && (
-                                    <div className="info-overlay-box" onClick={(e) => e.stopPropagation()}>
-                                        <p><strong>{METRIC_INFO.RTSD.title}:</strong> {METRIC_INFO.RTSD.desc}</p>
-                                        <button className="nav-btn" style={{padding: '8px 16px', marginTop: '12px', fontSize: '10px'}} onClick={() => setShowRTSDInfo(false)}>CERRAR</button>
-                                    </div>
-                                )}
+                                <div className="hud-value">{(metrics.rtsd ?? 0).toFixed(0)}<span style={{fontSize: '12px'}}>ms</span></div>
                             </div>
                         </div>
+
+                        {/* Detailed feedback */}
+                        <div style={{marginTop: '30px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)'}}>
+                            <span className="onboarding-tag">Análisis del Atleta</span>
+                            <p style={{fontSize: '15px', color: '#ababab', marginTop: '10px', lineHeight: '1.5'}}>
+                                {getFeedback(metrics.ssrt, metrics.rtsd, metrics.fatigueDetected)}
+                            </p>
+                        </div>
                     </div>
+                    
+                    {/* Fixed Modal Info Panel */}
+                    {activeInfoPanel && (
+                        <div className="fixed-info-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="fixed-info-content bracket-box">
+                                <h3 style={{color: 'var(--kinetic-neon)', marginBottom: '10px', fontSize: '14px', textTransform: 'uppercase'}}>{METRIC_INFO[activeInfoPanel].title}</h3>
+                                <p style={{fontSize: '14px', lineHeight: '1.6', color: '#dedede'}}>{METRIC_INFO[activeInfoPanel].desc}</p>
+                                <button className="nav-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => setActiveInfoPanel(null)}>ENTENDIDO</button>
+                            </div>
+                        </div>
+                    )}
+
                     <button className="nav-btn" onClick={(e) => { e.stopPropagation(); setState('DASHBOARD'); }}>IR AL DASHBOARD</button>
                 </div>
             )}
