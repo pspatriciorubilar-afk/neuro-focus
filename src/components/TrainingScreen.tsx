@@ -45,6 +45,7 @@ export const TrainingScreen: React.FC = () => {
     const [history, setHistory] = useState<SessionRecord[]>([]);
     const [activeInfoPanel, setActiveInfoPanel] = useState<keyof typeof METRIC_INFO | null>(null);
     const [activeDashboardInfo, setActiveDashboardInfo] = useState<{id: string, type: keyof typeof METRIC_INFO} | null>(null);
+    const [expandedSession, setExpandedSession] = useState<string | null>(null);
 
     // Constants
     const MAX_TRIALS = 50;
@@ -281,14 +282,22 @@ export const TrainingScreen: React.FC = () => {
 
     // Canvas Graphics Engine (Zero DOM Lag)
     useEffect(() => {
-        if (!canvasRef.current || (state !== 'GO' && state !== 'STOP' && state !== 'COUNTDOWN')) return;
+        if (!canvasRef.current) return;
         const ctx = canvasRef.current.getContext('2d');
         if (!ctx) return;
+
+        // Fix Display Quality (Retina/High-DPI)
+        const dpr = window.devicePixelRatio || 1;
+        const logicalSize = 260;
+        canvasRef.current.width = logicalSize * dpr;
+        canvasRef.current.height = logicalSize * dpr;
+        ctx.resetTransform();
+        ctx.scale(dpr, dpr);
 
         let animationFrameId: number;
 
         const render = () => {
-            ctx.clearRect(0, 0, 260, 260);
+            ctx.clearRect(0, 0, logicalSize, logicalSize);
 
             if (state === 'GO' || state === 'STOP') {
                 ctx.beginPath();
@@ -298,7 +307,7 @@ export const TrainingScreen: React.FC = () => {
 
                 // Simulamos resplandor inmersivo a nivel de GPU
                 ctx.save();
-                ctx.shadowBlur = 30;
+                ctx.shadowBlur = 30 * dpr; // Scale blur
                 ctx.shadowColor = state === 'GO' ? 'rgba(142, 255, 113, 0.6)' : 'rgba(255, 77, 77, 0.6)';
                 ctx.fill();
                 ctx.restore();
@@ -397,46 +406,56 @@ export const TrainingScreen: React.FC = () => {
 
                         {history.length === 0 && <p style={{color: '#555'}}>No hay sesiones registradas.</p>}
                         {history.map(record => (
-                            <div key={record.id} className="history-item bracket-box" style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '20px', marginBottom: '12px'}}>
+                            <div key={record.id} className="history-item bracket-box" style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '20px', marginBottom: '12px', cursor: 'pointer', transition: 'all 0.2s', borderLeft: expandedSession === record.id ? '2px solid var(--kinetic-neon)' : '1px solid transparent'}}
+                                 onClick={() => setExpandedSession(expandedSession === record.id ? null : record.id)}>
                                 <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center'}}>
-                                    <div className="history-rank" style={{color: record.rankColor, fontSize: '13px', letterSpacing: '0.1em'}}>{record.rank}</div>
-                                    <div className="card-desc" style={{fontSize: '11px'}}>{new Date(record.date).toLocaleDateString()}</div>
-                                </div>
-                                <div style={{display: 'flex', gap: '24px', margin: '12px 0'}}>
-                                    <div className="history-ssrt-neon" style={{position: 'relative'}}>
-                                        <div className="hud-label" style={{marginBottom: '4px'}}>
-                                            SSRT 
-                                            <span className="info-icon" style={{width: '10px', height: '10px', fontSize: '7px', marginLeft: '4px'}} 
-                                                onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'SSRT'}); }}>i</span>
-                                        </div>
-                                        <div className="val">{(record.ssrt ?? 0).toFixed(0)}<span className="unit">ms</span></div>
-                                        
-                                        {/* Remove inline overlay logic */}
+                                    <div className="history-rank" style={{color: record.rankColor, fontSize: '14px', letterSpacing: '0.1em'}}>{record.rank}</div>
+                                    <div className="card-desc" style={{fontSize: '11px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                        {new Date(record.date).toLocaleDateString()}
+                                        <span style={{fontSize: '14px'}}>{expandedSession === record.id ? '▲' : '▼'}</span>
                                     </div>
+                                </div>
+                                {expandedSession !== record.id && (
+                                    <div style={{fontSize: '11px', color: 'var(--kinetic-neon)', marginTop: '4px', opacity: 0.8}}>
+                                        Toca para ver métricas y resultados detallados.
+                                    </div>
+                                )}
+                                
+                                {expandedSession === record.id && (
+                                    <div style={{width: '100%', marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px'}}>
+                                        <div style={{display: 'flex', gap: '16px', margin: '12px 0', justifyContent: 'space-between'}}>
+                                            <div className="history-ssrt-neon" style={{position: 'relative'}}>
+                                                <div className="hud-label" style={{marginBottom: '4px'}}>
+                                                    SSRT 
+                                                    <span className="info-icon" style={{width: '10px', height: '10px', fontSize: '7px', marginLeft: '4px'}} 
+                                                        onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'SSRT'}); }}>i</span>
+                                                </div>
+                                                <div className="val" style={{fontSize: '20px'}}>{(record.ssrt ?? 0).toFixed(0)}<span className="unit">ms</span></div>
+                                            </div>
 
-                                    <div className="history-ssrt-neon" style={{position: 'relative'}}>
-                                        <div className="hud-label" style={{marginBottom: '4px'}}>
-                                            RTSD 
-                                            <span className="info-icon" style={{width: '10px', height: '10px', fontSize: '7px', marginLeft: '4px'}}
-                                                onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'RTSD'}); }}>i</span>
-                                        </div>
-                                        <div className="val">{(record.rtsd ?? 0).toFixed(0)}<span className="unit">ms</span></div>
-                                        {/* Remove inline overlay logic */}
-                                    </div>
+                                            <div className="history-ssrt-neon" style={{position: 'relative'}}>
+                                                <div className="hud-label" style={{marginBottom: '4px'}}>
+                                                    RTSD 
+                                                    <span className="info-icon" style={{width: '10px', height: '10px', fontSize: '7px', marginLeft: '4px'}}
+                                                        onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'RTSD'}); }}>i</span>
+                                                </div>
+                                                <div className="val" style={{fontSize: '20px'}}>{(record.rtsd ?? 0).toFixed(0)}<span className="unit">ms</span></div>
+                                            </div>
 
-                                    <div className="history-ssrt-neon" style={{position: 'relative'}}>
-                                        <div className="hud-label" style={{marginBottom: '4px'}}>
-                                            ACC 
-                                            <span className="info-icon" style={{width: '11px', height: '11px', fontSize: '7px', marginLeft: '4px'}}
-                                                onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'ACC'}); }}>i</span>
+                                            <div className="history-ssrt-neon" style={{position: 'relative'}}>
+                                                <div className="hud-label" style={{marginBottom: '4px'}}>
+                                                    ACC 
+                                                    <span className="info-icon" style={{width: '11px', height: '11px', fontSize: '7px', marginLeft: '4px'}}
+                                                        onClick={(e) => { e.stopPropagation(); setActiveDashboardInfo({id: record.id, type: 'ACC'}); }}>i</span>
+                                                </div>
+                                                <div className="val" style={{fontSize: '20px'}}>{((record.accuracy ?? 0)*100).toFixed(0)}<span className="unit">%</span></div>
+                                            </div>
                                         </div>
-                                        <div className="val">{((record.accuracy ?? 0)*100).toFixed(0)}<span className="unit">%</span></div>
-                                        {/* Remove inline overlay logic */}
+                                        <div style={{fontSize: '13px', color: '#ababab', fontStyle: 'italic', borderTop: '1px solid #1f1f1f', paddingTop: '12px', width: '100%', lineHeight: '1.4'}}>
+                                            {record.feedback || "Sin feedback disponible."}
+                                        </div>
                                     </div>
-                                </div>
-                                <div style={{fontSize: '13px', color: '#ababab', fontStyle: 'italic', borderTop: '1px solid #1f1f1f', paddingTop: '12px', width: '100%', lineHeight: '1.4'}}>
-                                    {record.feedback || "Sin feedback disponible."}
-                                </div>
+                                )}
                             </div>
                         ))}
                     </div>
