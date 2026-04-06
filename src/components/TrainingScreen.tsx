@@ -266,28 +266,18 @@ export const TrainingScreen: React.FC = () => {
             {/* Slide 1: Concepto */}
             {state === 'INTRO_1' && (
                 <div className="onboarding-overlay">
-                    <div className="onboarding-content">
-                        <h1 className="onboarding-title">El neuro-freno de élite: <br/>Inhibición motora</h1>
-                        <p className="onboarding-text">
-                            En la alta competición, tu éxito depende de la capacidad para **abortar un movimiento** en milisegundos cuando el entorno cambia drásticamente. Menos error, más control.
-                        </p>
-                        <div className="onboarding-grid">
-                            <div className="onboarding-card">
-                                <span className="card-title">AJUSTE REACTIVO (ANTICIPACIÓN DINÁMICA)</span>
-                                <p className="card-desc">Cancela un pase o tiro si el oponente cierra el carril en el último instante. Es la diferencia entre una pérdida y una jugada inteligente.</p>
-                            </div>
-                            <div className="onboarding-card">
-                                <span className="card-title">ESTABILIDAD NEURAL (CONTROL DE IMPULSOS)</span>
-                                <p className="card-desc">Regula tu sistema motor para evitar faltas innecesarias o errores por fatiga. Un cerebro que sabe 'frenar' es el que domina el juego.</p>
-                            </div>
-                            <div className="onboarding-card" style={{gridColumn: '1 / -1', borderLeftColor: '#fff'}}>
-                                <span className="card-title" style={{color: '#fff'}}>ENTRENAMIENTO COGNITIVO-MOTOR</span>
-                                <p className="card-desc">Hoy iniciarás el desarrollo de tu capacidad neurofisiológica de inhibición. Esto te servirá para mejorar la toma de decisiones milimétrica en tu disciplina deportiva, dándote la ventaja competitiva definitiva.</p>
-                            </div>
+                    <div className="onboarding-content" style={{justifyContent: 'center', textAlign: 'center'}}>
+                        <span className="onboarding-tag">ENTRENAMIENTO COGNITIVO</span>
+                        <h1 className="onboarding-title" style={{fontSize: '32px', color: 'var(--kinetic-neon)'}}>El neuro-freno de élite</h1>
+                        
+                        <div className="bracket-box" style={{margin: '20px 0', background: 'rgba(142, 255, 113, 0.02)'}}>
+                            <p className="onboarding-text" style={{fontSize: '18px', margin: '0', color: '#fff'}}>
+                                **Hoy iniciarás** el desarrollo de tu capacidad de frenado motor, esencial para anticipar y reaccionar ante estímulos críticos en competencia.
+                            </p>
                         </div>
-                        <div className="onboarding-footer">
-                            <div className="dots">🟢⚪</div>
-                            <button className="nav-btn" onClick={(e) => { e.stopPropagation(); setState('INTRO_2'); }}>SIGUIENTE</button>
+
+                        <div className="onboarding-footer" style={{marginTop: '30px', border: 'none'}}>
+                            <button className="nav-btn" style={{width: '100%', borderRadius: '4px'}} onClick={(e) => { e.stopPropagation(); setState('INTRO_2'); }}>COMENZAR ENTRENAMIENTO</button>
                         </div>
                     </div>
                     <div className="developer-footer">Desarrollado por Psicólogo Patricio Rubilar M.</div>

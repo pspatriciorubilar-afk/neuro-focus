@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Neuro Focus</string>
+    <string name="title_activity_main">Neuro Focus</string>
+    <string name="package_name">com.prm.neurofocus</string>
+    <string name="custom_url_scheme">com.prm.neurofocus</string>
+</resources>
